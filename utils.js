@@ -9,7 +9,7 @@ export class Utils {
     /* NOTE 2: changed the use of: */
     // return (value === undefined);
     /* to: */
-    return (typeof value === 'undefined');
+    return typeof value === "undefined";
     /* as this is supported on more browsers according to Teun Lassche */
   }
 
@@ -18,19 +18,19 @@ export class Utils {
   }
 
   static isBoolean(value) {
-    return (typeof value === 'boolean');
+    return typeof value === "boolean";
   }
 
   static isNumber(num) {
-    return (typeof num === 'number');
+    return typeof num === "number";
   }
 
   static isInteger(value) {
-    return (value === +value) && (value === (value | 0));
+    return value === +value && value === (value | 0);
   }
 
   static isString(value) {
-    return (typeof value === 'string');
+    return typeof value === "string";
   }
 
   static isNull(value) {
@@ -46,11 +46,11 @@ export class Utils {
       return false;
     }
 
-    return (typeof value === 'object');
+    return typeof value === "object";
   }
 
   static isFunction(value) {
-    return (typeof value === 'function');
+    return typeof value === "function";
   }
 
   static isEmptyObject(value) {
@@ -58,15 +58,20 @@ export class Utils {
       return false;
     }
 
-    return (Object.getOwnPropertyNames(value).length === 0);
+    return Object.getOwnPropertyNames(value).length === 0;
   }
 
   static isArray(value) {
-    return (Array.isArray(value));
+    return Array.isArray(value);
   }
 
   static objectEquals(x, y) {
-    if (Utils.isNull(x) || Utils.isNull(y) || Utils.isUndefined(x) || Utils.isUndefined(y)) {
+    if (
+      Utils.isNull(x) ||
+      Utils.isNull(y) ||
+      Utils.isUndefined(x) ||
+      Utils.isUndefined(y)
+    ) {
       return x === y;
     }
 
@@ -105,7 +110,7 @@ export class Utils {
     const yKeysInX = Object.keys(y).every((i) => xKeys.indexOf(i) !== -1);
     const valuesEqual = xKeys.every((i) => Utils.objectEquals(x[i], y[i]));
 
-    return (yKeysInX && valuesEqual);
+    return yKeysInX && valuesEqual;
   }
 
   static shuffleArray(array) {
@@ -116,9 +121,9 @@ export class Utils {
   }
 
   static faultOnError(err) {
-    const errBody = document.createElement('body');
-    errBody.style.backgroundColor = '#cc3333';
-    errBody.style.color = '#ffffff';
+    const errBody = document.createElement("body");
+    errBody.style.backgroundColor = "#cc3333";
+    errBody.style.color = "#ffffff";
     errBody.innerHTML = `<pre>${err}</pre>`;
     document.body = errBody;
 
@@ -148,7 +153,7 @@ export class Utils {
 
   static onlyProceedIf(statement, check) {
     if (Utils.attempt(check, [statement]) !== true) {
-      Utils.reportError('A checkpoint failed, check the stack for more info.');
+      Utils.reportError("A checkpoint failed, check the stack for more info.");
     }
   }
 
@@ -160,9 +165,13 @@ export class Utils {
     let max = pMax;
     let min = pMin;
 
-    if (!Utils.isInteger(max)) { max = 100; }
-    if (!Utils.isInteger(min)) { min = 0; }
-    const randomNumber = Math.floor((Math.random() * (max - min)) + min);
+    if (!Utils.isInteger(max)) {
+      max = 100;
+    }
+    if (!Utils.isInteger(min)) {
+      min = 0;
+    }
+    const randomNumber = Math.floor(Math.random() * (max - min) + min);
 
     return randomNumber;
   }
