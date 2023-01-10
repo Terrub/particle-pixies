@@ -27,31 +27,38 @@ class DivResultsRenderer {
     return suiteElement;
   }
 
-  addResult(suiteName, testName, result, expected, actual) {
+  printOutcome(suiteName, testName, color, chevron) {
     const suiteElement = this.getSuiteElement(suiteName);
     const resultLine = document.createElement("li");
 
-    let outcome = document.createElement("span");
-    if (result === TestBot.TEST_SUCCEEDED) {
-      outcome.style.color = "lime";
-      outcome.innerText = "√";
-    } else if (result === TestBot.TEST_FAILED) {
-      outcome.style.color = "red";
-      outcome.innerText = "X";
-    } else if (result === TestBot.TEST_ERROR) {
-      outcome.style.color = "orange";
-      outcome.innerText = "E";
-    } else if (result === TestBot.TEST_MISSING) {
-      outcome.style.color = "yellow";
-      outcome.innerText = "MISSING ASSERT";
-    } else {
-      outcome.style.color = "gray";
-      outcome.innerText = "UNKNOWN RESULT";
-    }
+    const outcome = document.createElement("span");
+    outcome.style.color = color;
+    outcome.innerText = chevron;
 
     resultLine.append(outcome, " - ", testName);
-
     suiteElement.appendChild(resultLine);
+  }
+
+  addSuccessResult(suiteName, testName) {
+    this.printOutcome(suiteName, testName, "lime", "√");
+  }
+
+  addFailedResult(suiteName, testName, expected, actual) {
+    this.printOutcome(suiteName, testName, "red", "X");
+    console.log(testName);
+    console.log("> Expected:", expected);
+    console.log("> Actual:", actual);
+  }
+
+  addErrorResult(suiteName, testName, expected, error) {
+    this.printOutcome(suiteName, testName, "orange", "E");
+    console.log(testName);
+    console.log("> Expected:", expected);
+    console.log("> Actual:", error);
+  }
+
+  addMissingResult(suiteName, testName) {
+    this.printOutcome(suiteName, testName, "yellow", "MISSING ASSERT");
   }
 }
 
@@ -110,28 +117,57 @@ export class TestBot {
       this.actual = undefined;
       this.expectedError = undefined;
       this.result = TestBot.TEST_MISSING;
+      let caughtError;
+      let caughtErrorName;
 
       try {
         test.fnTest();
       } catch (error) {
+        caughtError = error;
+        caughtErrorName = error.__proto__.name;
+
         if (Utils.isDefined(this.expectedError)) {
-          if (this.expectedError == error.__proto__.name) {
+          if (this.expectedError === caughtErrorName) {
             this.result = TestBot.TEST_SUCCEEDED;
           } else {
             this.result = TestBot.TEST_FAILED;
+            this.expected = this.expectedError;
+            this.actual = caughtErrorName;
           }
         } else {
           this.result = TestBot.TEST_ERROR;
         }
       }
 
-      this.resultRenderer.addResult(
-        suite.name,
-        test.name,
-        this.result,
-        this.expected,
-        this.actual
-      );
+      // We seem to expect an error but received none?? Fault it
+      if (
+        Utils.isDefined(this.expectedError) &&
+        this.result === TestBot.TEST_MISSING
+      ) {
+        this.result = TestBot.TEST_FAILED;
+        this.expected = this.expectedError;
+        this.actual = caughtErrorName;
+      }
+
+      if (this.result === TestBot.TEST_SUCCEEDED) {
+        this.resultRenderer.addSuccessResult(suite.name, test.name);
+      } else if (this.result === TestBot.TEST_FAILED) {
+        this.resultRenderer.addFailedResult(
+          suite.name,
+          test.name,
+          this.expected,
+          this.actual
+        );
+      } else if (this.result === TestBot.TEST_ERROR) {
+        this.resultRenderer.addErrorResult(
+          suite.name,
+          test.name,
+          this.expected,
+          caughtError
+        );
+      } else {
+        this.resultRenderer.addMissingResult(suite.name, test.name);
+      }
     });
   }
 
