@@ -22,18 +22,6 @@ export class World {
     return "red";
   }
 
-  updateEntities() {
-    this.entities.forEach((entity) => {
-      const position = this.entityPositions[entity.id];
-      this.renderer.drawCircle(
-        position.x,
-        position.y,
-        5,
-        this.getColorByEntityType(entity.type)
-      );
-    });
-  }
-
   addEntityAt(entity, position) {
     if (entity.id in this.entityMap) {
       throw new DuplicateEntityIdError(entity.id);
@@ -47,5 +35,17 @@ export class World {
 
   getEntityPosition(entity) {
     return this.entityPositions[entity.id];
+  }
+
+  render() {
+    this.entities.forEach((entity) => {
+      const position = this.entityPositions[entity.id];
+      this.renderer.drawCircle(
+        position.x,
+        position.y,
+        5,
+        this.getColorByEntityType(entity.type)
+      );
+    });
   }
 }

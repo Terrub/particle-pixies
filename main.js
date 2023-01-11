@@ -13,4 +13,4 @@ const entity = new Entity(1);
 const position = { x: 0.5, y: 0.5 };
 
 world.addEntityAt(entity, position);
-world.updateEntities(); // not sure I like this terminology
+world.render();
