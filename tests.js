@@ -56,8 +56,9 @@ testsWorld.addTest(
         actual = [x, y, r, color];
       },
     };
+    const config = { particleSize: 5 };
 
-    const world = new World(mockRenderer);
+    const world = new World(mockRenderer, config);
     const entity = new Entity(1);
     const position = { x: 0.5, y: 0.5 };
 
@@ -67,6 +68,25 @@ testsWorld.addTest(
     testRunner.assertDeepCompareObjects(expected, actual);
   }
 );
+
+testsWorld.addTest("world particle size is configurable", () => {
+  const mockRenderer = {};
+  const defaultWorld = new World(mockRenderer);
+  const config = { particleSize: 5 };
+  const configuredWorld = new World(mockRenderer, config);
+
+  const expected = {
+    default: 3,
+    configured: 5,
+  };
+
+  const actual = {
+    default: defaultWorld.particleSize,
+    configured: configuredWorld.particleSize,
+  };
+
+  testRunner.assertDeepCompareObjects(expected, actual);
+});
 
 /**
  * Entity Class tests

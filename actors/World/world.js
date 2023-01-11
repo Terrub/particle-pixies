@@ -11,11 +11,19 @@ export class World {
 
   entityPositions = {};
 
-  constructor(renderer) {
+  particleSize = 3;
+
+  constructor(renderer, config) {
     if (Utils.isUndefined(renderer)) {
       throw new MissingParameterError("renderer");
     }
     this.renderer = renderer;
+
+    if (Utils.isDefined(config)) {
+      if ("particleSize" in config) {
+        this.particleSize = config["particleSize"];
+      }
+    }
   }
 
   getColorByEntityType(type) {
@@ -38,14 +46,14 @@ export class World {
   }
 
   render() {
-    this.entities.forEach((entity) => {
+    for (const entity of this.entities) {
       const position = this.entityPositions[entity.id];
       this.renderer.drawCircle(
         position.x,
         position.y,
-        5,
+        this.particleSize,
         this.getColorByEntityType(entity.type)
       );
-    });
+    }
   }
 }
