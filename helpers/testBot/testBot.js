@@ -124,7 +124,7 @@ export class TestBot {
         test.fnTest();
       } catch (error) {
         caughtError = error;
-        caughtErrorName = error.__proto__.name;
+        caughtErrorName = error.name;
 
         if (Utils.isDefined(this.expectedError)) {
           if (this.expectedError === caughtErrorName) {
@@ -132,7 +132,7 @@ export class TestBot {
           } else {
             this.result = TestBot.TEST_FAILED;
             this.expected = this.expectedError;
-            this.actual = caughtErrorName;
+            this.actual = caughtError;
           }
         } else {
           this.result = TestBot.TEST_ERROR;
@@ -146,7 +146,7 @@ export class TestBot {
       ) {
         this.result = TestBot.TEST_FAILED;
         this.expected = this.expectedError;
-        this.actual = caughtErrorName;
+        this.actual = caughtError;
       }
 
       if (this.result === TestBot.TEST_SUCCEEDED) {
@@ -185,7 +185,7 @@ export class TestBot {
   }
 
   assertThrowsExpectedError(expectedError) {
-    this.expectedError = expectedError.prototype.name;
+    this.expectedError = expectedError.name;
   }
 
   assertDeepCompareObjects(expected, actual) {
