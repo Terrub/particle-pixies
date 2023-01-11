@@ -13,6 +13,13 @@ const resultRenderer = TestBot.renderResultsInDiv(resultsContainer);
 
 const testRunner = new TestBot(resultRenderer);
 
+function getMockRenderer() {
+  return {
+    drawCircle: () => {},
+    clear: () => {},
+  };
+}
+
 /**
  * World Class tests
  */
@@ -32,7 +39,7 @@ testsWorld.addTest(
   () => {
     testRunner.assertThrowsExpectedError(DuplicateEntityIdError);
 
-    const mockRenderer = {};
+    const mockRenderer = getMockRenderer();
     const world = new World(mockRenderer);
     const entityOne = new Entity(1);
     const entityTwo = new Entity(2);
@@ -51,10 +58,9 @@ testsWorld.addTest(
     const expected = [0.5, 0.5, 5, "red"];
 
     let actual;
-    const mockRenderer = {
-      drawCircle: (x, y, r, color) => {
-        actual = [x, y, r, color];
-      },
+    const mockRenderer = getMockRenderer();
+    mockRenderer.drawCircle = (x, y, r, color) => {
+      actual = [x, y, r, color];
     };
     const config = { particleSize: 5 };
 
@@ -63,6 +69,7 @@ testsWorld.addTest(
     const position = { x: 0.5, y: 0.5 };
 
     world.addEntityAt(entity, position);
+    world.resolveTic();
     world.render();
 
     testRunner.assertDeepCompareObjects(expected, actual);
@@ -70,7 +77,7 @@ testsWorld.addTest(
 );
 
 testsWorld.addTest("world particle size is configurable", () => {
-  const mockRenderer = {};
+  const mockRenderer = getMockRenderer();
   const defaultWorld = new World(mockRenderer);
   const config = { particleSize: 5 };
   const configuredWorld = new World(mockRenderer, config);

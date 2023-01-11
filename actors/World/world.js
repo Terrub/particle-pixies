@@ -1,15 +1,25 @@
-import { MissingParameterError } from "../../errors/missingParameterError.js";
 import { DuplicateEntityIdError } from "./duplicateEntityIdError.js";
 import { Utils } from "../../utils.js";
+import { MissingParameterError } from "../../errors/missingParameterError.js";
 
 export class World {
+  static #ACTIVE_BUFFER_ALPHA = "alpha";
+
+  static #ACTIVE_BUFFER_BETA = "beta";
+
+  #activeBufferFlag;
+
   renderer;
 
   entities = [];
 
   entityMap = {};
 
-  entityPositions = {};
+  positionBufferAlpha = [];
+
+  positionBufferBeta = [];
+
+  entityPositions;
 
   particleSize = 3;
 
@@ -24,6 +34,22 @@ export class World {
         this.particleSize = config["particleSize"];
       }
     }
+
+    this.#activeBufferFlag = World.#ACTIVE_BUFFER_ALPHA;
+    this.entityPositions = this.positionBufferAlpha;
+  }
+
+  #getCurrentWritableBuffer() {
+    return this.#activeBufferFlag === World.#ACTIVE_BUFFER_ALPHA
+      ? this.positionBufferBeta
+      : this.positionBufferAlpha;
+  }
+
+  #swapBuffers() {
+    this.#activeBufferFlag =
+      this.#activeBufferFlag === World.#ACTIVE_BUFFER_ALPHA
+        ? World.#ACTIVE_BUFFER_BETA
+        : World.#ACTIVE_BUFFER_ALPHA;
   }
 
   getColorByEntityType(type) {
@@ -35,19 +61,39 @@ export class World {
       throw new DuplicateEntityIdError(entity.id);
     }
 
-    this.entityPositions[entity.id] = position;
-    // TODO: Consider better storage of entity index map
-    this.entityMap[entity.id] = this.entities.length;
-    this.entities.push(entity);
+    const writablePositionBuffer = this.#getCurrentWritableBuffer();
+    const entityIndex = this.entities.length;
+    this.entityMap[entity.id] = entityIndex;
+    this.entities[entityIndex] = entity;
+    writablePositionBuffer[entityIndex] = position;
   }
 
   getEntityPosition(entity) {
-    return this.entityPositions[entity.id];
+    const entityIndex = this.entityMap[entity.id];
+
+    return this.entityPositions[entityIndex];
+  }
+
+  resolveTic() {
+    // update new position buffer with current position data
+    const newPositions = this.#getCurrentWritableBuffer();
+    for (let i = this.entityPositions.length; i > 0; i -= 1) {
+      const entityIndex = i - 1;
+      // const entity = this.entities[entityIndex];
+      const position = this.entityPositions[entityIndex];
+      newPositions[entityIndex] = position;
+    }
+    this.#swapBuffers();
+    this.entityPositions = newPositions;
   }
 
   render() {
-    for (const entity of this.entities) {
-      const position = this.entityPositions[entity.id];
+    this.renderer.clear();
+    for (let i = this.entityPositions.length; i > 0; i -= 1) {
+      const entityIndex = i - 1;
+      const entity = this.entities[entityIndex];
+      const position = this.entityPositions[entityIndex];
+
       this.renderer.drawCircle(
         position.x,
         position.y,
