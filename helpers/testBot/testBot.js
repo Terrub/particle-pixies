@@ -195,4 +195,13 @@ export class TestBot {
       ? TestBot.TEST_SUCCEEDED
       : TestBot.TEST_FAILED;
   }
+
+  assertLessThan(left, right) {
+    this.expected = true;
+    this.actual = left < right;
+    this.result =
+      this.expected === this.actual
+        ? TestBot.TEST_SUCCEEDED
+        : TestBot.TEST_FAILED;
+  }
 }
