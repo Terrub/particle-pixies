@@ -5,6 +5,8 @@ import { Utils } from "./utils.js";
 import { DuplicateEntityIdError } from "./actors/World/duplicateEntityIdError.js";
 import { MalformedIdParameterError } from "./actors/Entity/malformedIdParameterError.js";
 import { MissingParameterError } from "./errors/missingParameterError.js";
+import { Vector2d } from "./actors/vector2d.js";
+import { MalformedTypeParameterError } from "./actors/Entity/malformedTypeParameterError.js";
 
 const resultsContainer = document.createElement("div");
 document.body.appendChild(resultsContainer);
@@ -12,6 +14,13 @@ document.body.appendChild(resultsContainer);
 const resultRenderer = TestBot.renderResultsInDiv(resultsContainer);
 
 const testRunner = new TestBot(resultRenderer);
+
+function getMockRenderer() {
+  return {
+    drawCircle: () => {},
+    clear: () => {},
+  };
+}
 
 /**
  * World Class tests
@@ -32,12 +41,12 @@ testsWorld.addTest(
   () => {
     testRunner.assertThrowsExpectedError(DuplicateEntityIdError);
 
-    const mockRenderer = {};
+    const mockRenderer = getMockRenderer();
     const world = new World(mockRenderer);
-    const entityOne = new Entity(1);
-    const entityTwo = new Entity(2);
-    const duplicateIdEntity = new Entity(1);
-    const position = { x: 0.0, y: 0.0 };
+    const entityOne = new Entity(1, Entity.TYPE_ONE);
+    const entityTwo = new Entity(2, Entity.TYPE_TWO);
+    const duplicateIdEntity = new Entity(1, Entity.TYPE_ONE);
+    const position = new Vector2d(0.0, 0.0);
 
     world.addEntityAt(entityOne, position);
     world.addEntityAt(entityTwo, position);
@@ -51,22 +60,42 @@ testsWorld.addTest(
     const expected = [0.5, 0.5, 5, "red"];
 
     let actual;
-    const mockRenderer = {
-      drawCircle: (x, y, r, color) => {
-        actual = [x, y, r, color];
-      },
+    const mockRenderer = getMockRenderer();
+    mockRenderer.drawCircle = (x, y, r, color) => {
+      actual = [x, y, r, color];
     };
+    const config = { particleSize: 5 };
 
-    const world = new World(mockRenderer);
-    const entity = new Entity(1);
-    const position = { x: 0.5, y: 0.5 };
+    const world = new World(mockRenderer, config);
+    const entity = new Entity(1, Entity.TYPE_ZERO);
+    const position = new Vector2d(0.5, 0.5);
 
     world.addEntityAt(entity, position);
-    world.updateEntities(); // not sure I like this terminology
+    world.resolveTic();
+    world.render();
 
     testRunner.assertDeepCompareObjects(expected, actual);
   }
 );
+
+testsWorld.addTest("world particle size is configurable", () => {
+  const mockRenderer = getMockRenderer();
+  const defaultWorld = new World(mockRenderer);
+  const config = { particleSize: 5 };
+  const configuredWorld = new World(mockRenderer, config);
+
+  const expected = {
+    default: 3,
+    configured: 5,
+  };
+
+  const actual = {
+    default: defaultWorld.particleSize,
+    configured: configuredWorld.particleSize,
+  };
+
+  testRunner.assertDeepCompareObjects(expected, actual);
+});
 
 /**
  * Entity Class tests
@@ -82,8 +111,17 @@ testsEntity.addTest(
   }
 );
 
+testsEntity.addTest(
+  "Constructing entity without type throws MalformedTypeParameterError",
+  () => {
+    testRunner.assertThrowsExpectedError(MalformedTypeParameterError);
+
+    const faultyEntity = new Entity(1);
+  }
+);
+
 testsEntity.addTest("New entity has a providable id", () => {
-  const entity = new Entity(1);
+  const entity = new Entity(1, Entity.TYPE_FIVE);
   const expected = 1;
   const actual = entity.id;
 
@@ -92,7 +130,7 @@ testsEntity.addTest("New entity has a providable id", () => {
 
 testsEntity.addTest("New entity has a type", () => {
   const expected = true;
-  const entity = new Entity(1);
+  const entity = new Entity(1, Entity.TYPE_FOUR);
   const actual = Utils.isDefined(entity.type);
 
   testRunner.assertStrictlyEquals(expected, actual);
