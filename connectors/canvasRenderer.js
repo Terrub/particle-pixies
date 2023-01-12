@@ -5,22 +5,22 @@ export class CanvasRenderer {
 
   constructor(canvas) {
     this.canvas = canvas;
-    this.glib = canvas.getContext('2d');
+    this.glib = canvas.getContext("2d");
   }
 
-  get width () {
+  get width() {
     return this.canvas.clientWidth;
   }
 
-  get height () {
+  get height() {
     return this.canvas.clientHeight;
   }
 
-  get halfWidth () {
+  get halfWidth() {
     return this.canvas.clientWidth * 0.5;
   }
 
-  get halfHeight () {
+  get halfHeight() {
     return this.canvas.clientHeight * 0.5;
   }
 
@@ -38,10 +38,10 @@ export class CanvasRenderer {
     this.glib.fillStyle = color;
     this.glib.beginPath();
     this.glib.arc(
-      this.halfWidth + x * this.halfWidth, 
-      this.halfHeight + y * this.halfHeight, 
-      r, 
-      0, 
+      this.halfWidth + x * this.halfWidth,
+      this.halfHeight + y * this.halfHeight,
+      r,
+      0,
       2 * Math.PI
     );
     this.glib.fill();

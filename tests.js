@@ -5,6 +5,8 @@ import { Utils } from "./utils.js";
 import { DuplicateEntityIdError } from "./actors/World/duplicateEntityIdError.js";
 import { MalformedIdParameterError } from "./actors/Entity/malformedIdParameterError.js";
 import { MissingParameterError } from "./errors/missingParameterError.js";
+import { Vector2d } from "./actors/vector2d.js";
+import { MalformedTypeParameterError } from "./actors/Entity/malformedTypeParameterError.js";
 
 const resultsContainer = document.createElement("div");
 document.body.appendChild(resultsContainer);
@@ -41,10 +43,10 @@ testsWorld.addTest(
 
     const mockRenderer = getMockRenderer();
     const world = new World(mockRenderer);
-    const entityOne = new Entity(1);
-    const entityTwo = new Entity(2);
-    const duplicateIdEntity = new Entity(1);
-    const position = { x: 0.0, y: 0.0 };
+    const entityOne = new Entity(1, Entity.TYPE_ONE);
+    const entityTwo = new Entity(2, Entity.TYPE_TWO);
+    const duplicateIdEntity = new Entity(1, Entity.TYPE_ONE);
+    const position = new Vector2d(0.0, 0.0);
 
     world.addEntityAt(entityOne, position);
     world.addEntityAt(entityTwo, position);
@@ -65,8 +67,8 @@ testsWorld.addTest(
     const config = { particleSize: 5 };
 
     const world = new World(mockRenderer, config);
-    const entity = new Entity(1);
-    const position = { x: 0.5, y: 0.5 };
+    const entity = new Entity(1, Entity.TYPE_ZERO);
+    const position = new Vector2d(0.5, 0.5);
 
     world.addEntityAt(entity, position);
     world.resolveTic();
@@ -109,8 +111,17 @@ testsEntity.addTest(
   }
 );
 
+testsEntity.addTest(
+  "Constructing entity without type throws MalformedTypeParameterError",
+  () => {
+    testRunner.assertThrowsExpectedError(MalformedTypeParameterError);
+
+    const faultyEntity = new Entity(1);
+  }
+);
+
 testsEntity.addTest("New entity has a providable id", () => {
-  const entity = new Entity(1);
+  const entity = new Entity(1, Entity.TYPE_FIVE);
   const expected = 1;
   const actual = entity.id;
 
@@ -119,7 +130,7 @@ testsEntity.addTest("New entity has a providable id", () => {
 
 testsEntity.addTest("New entity has a type", () => {
   const expected = true;
-  const entity = new Entity(1);
+  const entity = new Entity(1, Entity.TYPE_FOUR);
   const actual = Utils.isDefined(entity.type);
 
   testRunner.assertStrictlyEquals(expected, actual);
