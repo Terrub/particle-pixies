@@ -1,8 +1,7 @@
 import { DuplicateEntityIdError } from "./duplicateEntityIdError.js";
 import { Utils } from "../../utils.js";
 import { MissingParameterError } from "../../errors/missingParameterError.js";
-import { Vector2d } from "../vector2d.js";
-import { Entity } from "../Entity/entity.js";
+import { Vector } from "../vector.js";
 
 export class World {
   static #ACTIVE_BUFFER_ALPHA = "alpha";
@@ -61,6 +60,7 @@ export class World {
   }
 
   #swapBuffers() {
+    this.entityPositions = this.#getCurrentWritableBuffer();
     this.#activeBufferFlag =
       this.#activeBufferFlag === World.#ACTIVE_BUFFER_ALPHA
         ? World.#ACTIVE_BUFFER_BETA
@@ -82,48 +82,31 @@ export class World {
     const entityIndex = this.entities.length;
     this.entityMap[entity.id] = entityIndex;
     this.entities[entityIndex] = entity;
-    writablePositionBuffer[entityIndex] = position;
+    writablePositionBuffer[entityIndex] = [position, new Vector(0, 0)];
   }
 
   getEntityPosition(entity) {
     const entityIndex = this.entityMap[entity.id];
 
-    return this.entityPositions[entityIndex];
+    return this.getEntityPositionByIndex(entityIndex);
   }
 
   getModifierByDistance(distance) {
-    const massMod = 0.00001;
-    const linearMod = 0.05;
-
-    if (distance < 0.0000001) {
-      return -linearMod;
+    if (distance < this.particleSize * 2) {
+      return distance - this.particleSize * 2;
     }
 
-    // if (distance > 0.1) {
-    //   return 0;
-    // }
+    let modifier = 0;
 
-    const linearVal = 4 * distance - linearMod;
-    const massVal = massMod / (distance * distance);
-
-    let modifier = Math.min(linearVal, massVal);
+    distance -= this.particleSize * 2;
+    if (distance <= 25) {
+      modifier = distance * 0.04;
+    } else if (distance <= 50) {
+      modifier = 2 - distance * 0.04;
+    }
 
     return modifier;
   }
-
-  // getModifierByDistance(distance) {
-  //   const attractionMod = 1;
-
-  //   if (distance < 0.05) {
-  //     return distance - 0.05;
-  //   }
-
-  //   if (distance < 0.0703) {
-  //     return distance - 0.1 * attractionMod;
-  //   }
-
-  //   return (0.0001 / (distance * distance)) * attractionMod;
-  // }
 
   getAttractionModifier(idA, idB) {
     const entityA = this.entities[idA];
@@ -134,53 +117,90 @@ export class World {
     return this.attractionMods[typeA][typeB];
   }
 
-  calcNewPosition(position, skipIndex) {
-    let newPosition = position;
+  getEntityPositionByIndex(entityIndex) {
+    return this.entityPositions[entityIndex][0];
+  }
+
+  getEntityVelocityByIndex(entityIndex) {
+    return this.entityPositions[entityIndex][1];
+  }
+
+  notCloseEnough(v1, v2) {
+    if (
+      v2.x < 50 ||
+      v2.x > this.renderer.width - 50 ||
+      v2.y < 50 ||
+      v2.y > this.renderer.height - 50
+    ) {
+      // Too close to the edges to make sure it's not in range for now. needs work
+      // TODO: Many
+      return false;
+    }
+
+    if (
+      v1.x + 50 < v2.x || // other is too far on our right
+      v1.y + 50 < v2.y || // other is too far below us
+      v1.x - 50 > v2.x || // other is too far left of us
+      v1.y - 50 > v2.y // other is too far above us
+    ) {
+      return true;
+    }
+
+    // These are close enough it seems.
+    return false;
+  }
+
+  getNewVelocity(position, skipIndex) {
+    let forceVector = new Vector(0, 0);
+    const curVelocity = this.getEntityVelocityByIndex(skipIndex);
     for (let i = this.entityPositions.length; i > 0; i -= 1) {
       const entityIndex = i - 1;
       if (entityIndex === skipIndex) {
         continue;
       }
-      if (newPosition.x > 1) {
-        newPosition.x -= 2;
-      } else if (newPosition.x < -1) {
-        newPosition.x += 2;
+
+      const otherPos = this.getEntityPositionByIndex(entityIndex);
+      if (this.notCloseEnough(position, otherPos)) {
+        continue;
       }
 
-      if (newPosition.y > 1) {
-        newPosition.y -= 2;
-      } else if (newPosition.y < -1) {
-        newPosition.y += 2;
-      }
-
-      const otherPos = this.entityPositions[entityIndex];
-      const distance = Vector2d.distance(newPosition, otherPos);
-      const diffAtoB = Vector2d.subtract(newPosition, otherPos);
-      let modifier = this.getModifierByDistance(distance);
-      const attractionMod = this.getAttractionModifier(skipIndex, entityIndex);
+      let diffAtoB = Vector.getShortestTorusDeltaVector(
+        position,
+        otherPos,
+        this.renderer.width,
+        this.renderer.height
+      );
+      let modifier = this.getModifierByDistance(diffAtoB.length());
       if (modifier > 0) {
-        modifier *= attractionMod;
+        modifier *= this.getAttractionModifier(skipIndex, entityIndex);
       }
-      diffAtoB.scale(modifier);
-      newPosition = Vector2d.subtract(newPosition, diffAtoB);
+
+      forceVector = Vector.add(forceVector, diffAtoB.scale(modifier));
     }
 
-    return newPosition;
+    return Vector.add(this.getEntityVelocityByIndex(skipIndex), forceVector);
+  }
+
+  wrap(vector) {
+    vector.x = (this.renderer.width + vector.x) % this.renderer.width;
+    vector.y = (this.renderer.height + vector.y) % this.renderer.height;
+
+    return vector;
   }
 
   resolveTic() {
-    // update new position buffer with current position data
     const newPositions = this.#getCurrentWritableBuffer();
     for (let i = this.entityPositions.length; i > 0; i -= 1) {
       const entityIndex = i - 1;
-      const entity = this.entities[entityIndex];
-      const position = this.entityPositions[entityIndex];
-      const newPosition = this.calcNewPosition(position, entityIndex);
+      const position = this.getEntityPositionByIndex(entityIndex);
+      const velocityVector = this.getNewVelocity(position, entityIndex).limit(
+        3
+      );
+      const newPosition = this.wrap(Vector.add(position, velocityVector));
 
-      newPositions[entityIndex] = newPosition;
+      newPositions[entityIndex] = [newPosition, velocityVector];
     }
     this.#swapBuffers();
-    this.entityPositions = newPositions;
   }
 
   render() {
@@ -188,7 +208,7 @@ export class World {
     for (let i = this.entityPositions.length; i > 0; i -= 1) {
       const entityIndex = i - 1;
       const entity = this.entities[entityIndex];
-      const position = this.entityPositions[entityIndex];
+      const position = this.getEntityPositionByIndex(entityIndex);
 
       this.renderer.drawCircle(
         position.x,
