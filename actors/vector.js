@@ -7,17 +7,13 @@ export class Vector {
   }
 
   static getShortestTorusDeltaVector(v1, v2, w, h) {
-    const tV1 = new Vector((v1.x + (w * 0.5)) % w, (v1.y + (h * 0.5)) % h);
-    const tV2 = new Vector((v2.x + (w * 0.5)) % w, (v2.y + (h * 0.5)) % h);
+    const tV1 = new Vector((v1.x + w * 0.5) % w, (v1.y + h * 0.5) % h);
+    const tV2 = new Vector((v2.x + w * 0.5) % w, (v2.y + h * 0.5) % h);
 
-    const cisVector = Vector.subtract(v2, v1);
-    const transVector = Vector.subtract(tV2, tV1);
+    const cV = Vector.subtract(v2, v1);
+    tV2.subtract(tV1);
 
-    if (cisVector.length() > transVector.length()) {
-      return transVector
-    }
-
-    return cisVector;
+    return cV.x * cV.x + cV.y * cV.y > tV2.x * tV2.x + tV2.y * tV2.y ? tV2 : cV;
   }
 
   static getWrappedDistance(v1, v2, w, h) {
@@ -25,7 +21,7 @@ export class Vector {
     const dY = Math.abs(v1.y - v2.y);
     const lH = Math.min(dX, w - dX);
     const lV = Math.min(dY, h - dY);
-    
+
     return Math.hypot(lH, lV);
   }
 
@@ -35,6 +31,20 @@ export class Vector {
 
   static subtract(v1, v2) {
     return new Vector(v1.x - v2.x, v1.y - v2.y);
+  }
+
+  add(v2) {
+    this.x += v2.x;
+    this.y += v2.y;
+
+    return this;
+  }
+
+  subtract(v2) {
+    this.x -= v2.x;
+    this.y -= v2.y;
+
+    return this;
   }
 
   scale(number) {
@@ -49,7 +59,8 @@ export class Vector {
   }
 
   normalise() {
-    if (this.length() === 0) {
+    // Cannot devide by 0
+    if (this.x === 0 && this.y === 0) {
       return this;
     }
 

@@ -101,6 +101,70 @@ testsWorld.addTest("world particle size is configurable", () => {
   testRunner.assertDeepCompareObjects(expected, actual);
 });
 
+testsWorld.addTest(
+  "isTooFarAway returns true with v1 and v2 dispersed in the centre",
+  () => {
+    const mockRenderer = getMockRenderer();
+    mockRenderer.width = 600;
+    mockRenderer.height = 400;
+    const world = new World(mockRenderer);
+    const expected = true;
+    const v1 = new Vector(27, 200);
+    const v2 = new Vector(210, 390);
+    const actual = world.isTooFarAway(v1, v2);
+
+    testRunner.assertStrictlyEquals(expected, actual);
+  }
+);
+
+testsWorld.addTest(
+  "isTooFarAway returns true with v1 and v2 close in height but not width",
+  () => {
+    const mockRenderer = getMockRenderer();
+    mockRenderer.width = 600;
+    mockRenderer.height = 400;
+    const world = new World(mockRenderer);
+    const expected = true;
+    const v1 = new Vector(27, 10);
+    const v2 = new Vector(210, 390);
+    const actual = world.isTooFarAway(v1, v2);
+
+    testRunner.assertStrictlyEquals(expected, actual);
+  }
+);
+testsWorld.addTest(
+  "isTooFarAway returns false with v1 and v2 close in the centre",
+  () => {
+    const mockRenderer = getMockRenderer();
+    mockRenderer.width = 600;
+    mockRenderer.height = 400;
+    const world = new World(mockRenderer);
+    const expected = false;
+    const v1 = new Vector(310, 200);
+    const v2 = new Vector(300, 210);
+    const actual = world.isTooFarAway(v1, v2);
+
+    testRunner.assertStrictlyEquals(expected, actual);
+  }
+);
+
+
+testsWorld.addTest(
+  "isTooFarAway returns false with v1 at the top centre and v2 at the bottom centre",
+  () => {
+    const mockRenderer = getMockRenderer();
+    mockRenderer.width = 600;
+    mockRenderer.height = 400;
+    const world = new World(mockRenderer);
+    const expected = false;
+    const v1 = new Vector(mockRenderer.width * 0.5, 10);
+    const v2 = new Vector(mockRenderer.width * 0.5, mockRenderer.height - 10);
+    const actual = world.isTooFarAway(v1, v2);
+
+    testRunner.assertStrictlyEquals(expected, actual);
+  }
+);
+
 /**
  * Entity Class tests
  */
