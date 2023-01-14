@@ -105,7 +105,7 @@ export class World {
       modifier = 2 - distance * 0.04;
     }
 
-    return modifier;
+    return modifier * 0.15;
   }
 
   getAttractionModifier(idA, idB) {
@@ -125,34 +125,24 @@ export class World {
     return this.entityPositions[entityIndex][1];
   }
 
-  notCloseEnough(v1, v2) {
+  isTooFarAway(v1, v2) {
     if (
-      v2.x < 50 ||
-      v2.x > this.renderer.width - 50 ||
-      v2.y < 50 ||
-      v2.y > this.renderer.height - 50
+      ((this.renderer.width + v1.x + 50) % this.renderer.width >= v2.x ||    // other is too far right of us
+        (this.renderer.width + v1.x - 50) % this.renderer.width <= v2.x) &&  // other is too far left of us
+      ((this.renderer.height + v1.y + 50) % this.renderer.height >= v2.y ||  // other is too far below us
+        (this.renderer.height + v1.y - 50) % this.renderer.height <= v2.y)   // other is too far above us
     ) {
-      // Too close to the edges to make sure it's not in range for now. needs work
-      // TODO: Many
       return false;
     }
 
-    if (
-      v1.x + 50 < v2.x || // other is too far on our right
-      v1.y + 50 < v2.y || // other is too far below us
-      v1.x - 50 > v2.x || // other is too far left of us
-      v1.y - 50 > v2.y // other is too far above us
-    ) {
-      return true;
-    }
-
-    // These are close enough it seems.
-    return false;
+    // These are too far away it seems.
+    return true;
   }
 
   getNewVelocity(position, skipIndex) {
     let forceVector = new Vector(0, 0);
     const curVelocity = this.getEntityVelocityByIndex(skipIndex);
+
     for (let i = this.entityPositions.length; i > 0; i -= 1) {
       const entityIndex = i - 1;
       if (entityIndex === skipIndex) {
@@ -160,25 +150,26 @@ export class World {
       }
 
       const otherPos = this.getEntityPositionByIndex(entityIndex);
-      if (this.notCloseEnough(position, otherPos)) {
+      // TODO: give 'isTooFarAway' the whole list and have it return only those in range.
+      if (this.isTooFarAway(position, otherPos)) {
         continue;
       }
 
-      let diffAtoB = Vector.getShortestTorusDeltaVector(
+      const diff = Vector.getShortestTorusDeltaVector(
         position,
         otherPos,
         this.renderer.width,
         this.renderer.height
       );
-      let modifier = this.getModifierByDistance(diffAtoB.length());
+      let modifier = this.getModifierByDistance(diff.length());
       if (modifier > 0) {
         modifier *= this.getAttractionModifier(skipIndex, entityIndex);
       }
 
-      forceVector = Vector.add(forceVector, diffAtoB.scale(modifier));
+      forceVector.add(diff.scale(modifier));
     }
 
-    return Vector.add(this.getEntityVelocityByIndex(skipIndex), forceVector);
+    return curVelocity.add(forceVector);
   }
 
   wrap(vector) {
@@ -193,10 +184,8 @@ export class World {
     for (let i = this.entityPositions.length; i > 0; i -= 1) {
       const entityIndex = i - 1;
       const position = this.getEntityPositionByIndex(entityIndex);
-      const velocityVector = this.getNewVelocity(position, entityIndex).limit(
-        3
-      );
-      const newPosition = this.wrap(Vector.add(position, velocityVector));
+      const velocityVector = this.getNewVelocity(position, entityIndex).limit(3);
+      const newPosition = this.wrap(position.add(velocityVector));
 
       newPositions[entityIndex] = [newPosition, velocityVector];
     }
