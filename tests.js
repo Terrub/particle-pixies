@@ -5,8 +5,8 @@ import { Utils } from "./utils.js";
 import { DuplicateEntityIdError } from "./actors/World/duplicateEntityIdError.js";
 import { MalformedIdParameterError } from "./actors/Entity/malformedIdParameterError.js";
 import { MissingParameterError } from "./errors/missingParameterError.js";
-import { Vector2d } from "./actors/vector2d.js";
 import { MalformedTypeParameterError } from "./actors/Entity/malformedTypeParameterError.js";
+import { Vector } from "./actors/vector.js";
 
 const resultsContainer = document.createElement("div");
 document.body.appendChild(resultsContainer);
@@ -17,6 +17,10 @@ const testRunner = new TestBot(resultRenderer);
 
 function getMockRenderer() {
   return {
+    width: 100,
+    height: 60,
+    halfWidth: 50,
+    halfHeight: 30,
     drawCircle: () => {},
     clear: () => {},
   };
@@ -46,7 +50,7 @@ testsWorld.addTest(
     const entityOne = new Entity(1, Entity.TYPE_ONE);
     const entityTwo = new Entity(2, Entity.TYPE_TWO);
     const duplicateIdEntity = new Entity(1, Entity.TYPE_ONE);
-    const position = new Vector2d(0.0, 0.0);
+    const position = new Vector(0, 0);
 
     world.addEntityAt(entityOne, position);
     world.addEntityAt(entityTwo, position);
@@ -57,7 +61,7 @@ testsWorld.addTest(
 testsWorld.addTest(
   "World calls renderer to draw single provided entity",
   () => {
-    const expected = [0.5, 0.5, 5, "red"];
+    const expected = [5, 5, 5, "red"];
 
     let actual;
     const mockRenderer = getMockRenderer();
@@ -68,7 +72,7 @@ testsWorld.addTest(
 
     const world = new World(mockRenderer, config);
     const entity = new Entity(1, Entity.TYPE_ZERO);
-    const position = new Vector2d(0.5, 0.5);
+    const position = new Vector(5, 5);
 
     world.addEntityAt(entity, position);
     world.resolveTic();
@@ -135,5 +139,63 @@ testsEntity.addTest("New entity has a type", () => {
 
   testRunner.assertStrictlyEquals(expected, actual);
 });
+
+/**
+ * Vector Class tests
+ */
+const testsVector = testRunner.createSuite("Tests Vector class");
+
+testsVector.addTest("v(1,1) + v(1,1) = v(2,2)", () => {
+  const expected = new Vector(2, 2);
+  const v1 = new Vector(1, 1);
+  const v2 = new Vector(1, 1);
+  const actual = Vector.add(v1, v2);
+
+  testRunner.assertDeepCompareObjects(expected, actual);
+});
+
+testsVector.addTest("v(2,3) + v(-2,-3) = v(0,0)", () => {
+  const expected = new Vector(0, 0);
+  const v1 = new Vector(2, 3);
+  const v2 = new Vector(-2, -3);
+  const actual = Vector.add(v1, v2);
+
+  testRunner.assertDeepCompareObjects(expected, actual);
+});
+
+testsVector.addTest("v(2,1) + v(2,-2) + v(-1,1) + v(-4,-1) = v(-1,-1)", () => {
+  const expected = new Vector(-1, -1);
+  const v1 = new Vector(2, 1);
+  const v2 = new Vector(2, -2);
+  const v3 = new Vector(-1, 1);
+  const v4 = new Vector(-4, -1);
+  const actual = Vector.add(Vector.add(v1, v2), Vector.add(v3, v4));
+
+  testRunner.assertDeepCompareObjects(expected, actual);
+});
+
+testsVector.addTest(
+  "calc distance between v(10, 0) and v(20, 0) on width 100 returns 10",
+  () => {
+    const expected = 10;
+    const v1 = new Vector(10, 0);
+    const v2 = new Vector(20, 0);
+    const actual = Vector.getShortestTorusDeltaVector(v1, v2, 100, 60).length();
+
+    testRunner.assertStrictlyEquals(expected, actual);
+  }
+);
+
+testsVector.addTest(
+  "calc distance between v(10, 0) and v(70, 0) on width 100 returns 40",
+  () => {
+    const expected = 40;
+    const v1 = new Vector(10, 0);
+    const v2 = new Vector(70, 0);
+    const actual = Vector.getShortestTorusDeltaVector(v1, v2, 100, 60).length();
+
+    testRunner.assertStrictlyEquals(expected, actual);
+  }
+);
 
 testRunner.run();
