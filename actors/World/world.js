@@ -105,7 +105,7 @@ export class World {
       modifier = 2 - distance * 0.04;
     }
 
-    return modifier * 0.15;
+    return modifier;
   }
 
   getAttractionModifier(idA, idB) {
