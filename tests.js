@@ -148,7 +148,6 @@ testsWorld.addTest(
   }
 );
 
-
 testsWorld.addTest(
   "isTooFarAway returns false with v1 at the top centre and v2 at the bottom centre",
   () => {

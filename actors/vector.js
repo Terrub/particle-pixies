@@ -55,7 +55,7 @@ export class Vector {
   }
 
   length() {
-    return Math.hypot(this.x, this.y);
+    return Math.sqrt(this.x * this.x + this.y * this.y);
   }
 
   normalise() {
@@ -68,6 +68,10 @@ export class Vector {
   }
 
   limit(value) {
-    return this.normalise().scale(value);
+    if (value * value < this.x * this.x + this.y * this.y) {
+      this.normalise().scale(value);
+    }
+
+    return this;
   }
 }
