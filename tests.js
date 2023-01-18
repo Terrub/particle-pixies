@@ -32,7 +32,7 @@ function getMockRenderer() {
 const testsWorld = testRunner.createSuite("Tests World class");
 
 testsWorld.addTest(
-  "Constructing world without renderer throws MissingParameterError",
+  "Constructing world without renderer throws 'MissingParameterError'",
   () => {
     testRunner.assertThrowsExpectedError(MissingParameterError);
 
@@ -41,7 +41,7 @@ testsWorld.addTest(
 );
 
 testsWorld.addTest(
-  "Adding entity with duplicate id throws DuplicateEntityIdError",
+  "Adding entity with duplicate id throws 'DuplicateEntityIdError'",
   () => {
     testRunner.assertThrowsExpectedError(DuplicateEntityIdError);
 
@@ -102,7 +102,7 @@ testsWorld.addTest("world particle size is configurable", () => {
 });
 
 testsWorld.addTest(
-  "isTooFarAway returns true with v1 and v2 dispersed in the centre",
+  "'isTooFarAway' returns true with v1 and v2 dispersed in the centre",
   () => {
     const mockRenderer = getMockRenderer();
     mockRenderer.width = 600;
@@ -118,7 +118,7 @@ testsWorld.addTest(
 );
 
 testsWorld.addTest(
-  "isTooFarAway returns true with v1 and v2 close in height but not width",
+  "'isTooFarAway' returns true with v1 and v2 close in height but not width",
   () => {
     const mockRenderer = getMockRenderer();
     mockRenderer.width = 600;
@@ -133,7 +133,7 @@ testsWorld.addTest(
   }
 );
 testsWorld.addTest(
-  "isTooFarAway returns false with v1 and v2 close in the centre",
+  "'isTooFarAway' returns false with v1 and v2 close in the centre",
   () => {
     const mockRenderer = getMockRenderer();
     mockRenderer.width = 600;
@@ -149,7 +149,7 @@ testsWorld.addTest(
 );
 
 testsWorld.addTest(
-  "isTooFarAway returns false with v1 at the top centre and v2 at the bottom centre",
+  "'isTooFarAway' returns false with v1 at the top centre and v2 at the bottom centre",
   () => {
     const mockRenderer = getMockRenderer();
     mockRenderer.width = 600;
@@ -161,6 +161,57 @@ testsWorld.addTest(
     const actual = world.isTooFarAway(v1, v2);
 
     testRunner.assertStrictlyEquals(expected, actual);
+  }
+);
+
+testsWorld.addTest(
+  "'calcNewVelocityVector' returns (0,0) when particles would directly pull another particle into its neighbour",
+  () => {
+    const mockRenderer = getMockRenderer();
+    mockRenderer.width = 600;
+    mockRenderer.height = 400;
+
+    const r = 5;
+    const config = {
+      particleSize: r,
+      attractionMods: [
+        [1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1],
+      ],
+    };
+    const world = new World(mockRenderer, config);
+    const entityA = new Entity("A", Entity.TYPE_ZERO);
+    const entityB = new Entity("B", Entity.TYPE_ZERO);
+    const entityC = new Entity("C", Entity.TYPE_ZERO);
+    const entityD = new Entity("D", Entity.TYPE_ZERO);
+    world.addEntityAt(entityA, new Vector(r * 2, r * 2));
+    world.addEntityAt(entityB, new Vector(r * 4, r * 2));
+    world.addEntityAt(entityC, new Vector(r * 6, r));
+    world.addEntityAt(entityD, new Vector(r * 6, r * 3));
+    world.resolveTic();
+
+    /*
+      + -------- . .
+      |           C C
+      |   A A B B C C
+      |   A A B B D D
+      |           D D
+      .
+      .   'A' cannot be pulled into B by B, C and D's combined pull
+     */
+
+    const expected = new Vector(0, 0);
+    const position = world.getEntityPosition(entityA);
+    const actual = world.calcNewVelocityVector(
+      position,
+      world.entityMap[entityA.id]
+    );
+
+    testRunner.assertDeepCompareObjects(expected, actual);
   }
 );
 
